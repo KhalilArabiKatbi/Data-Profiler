@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  dataprofiler:
+    build: .
+    working_dir: /app
+    volumes:
+      - ./data:/app/data
+      - ./reports:/app/reports
+    command: ["/app/data/sample_sales.csv", "--out", "/app/reports", "--title", "Sample Sales"]

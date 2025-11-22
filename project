@@ -1,0 +1,353 @@
+⭐ 1. High-Level Pipeline Flow (Mental Model)
+
+Think of the tool as a pipeline with 6 main stages:
+
+           ┌────────────┐
+           │   INPUT    │
+           │  CSV File  │
+           └─────┬──────┘
+                 │
+        ┌────────▼────────┐
+        │ Data Ingestion   │
+        │ (load + dtypes)  │
+        └────────┬─────────┘
+                 │
+        ┌────────▼────────┐
+        │  Profiling Core │
+        │ stats + missing │
+        │ dups + cats     │
+        └────────┬────────┘
+                 │
+        ┌────────▼────────┐
+        │ Anomaly Engine  │
+        │ IQR/Z/Isolation │
+        └────────┬────────┘
+                 │
+        ┌────────▼────────┐
+        │ Report Builder  │
+        │ HTML / JSON /   │
+        │ PDF templates   │
+        └────────┬────────┘
+                 │
+        ┌────────▼────────┐
+        │   CLI Output    │
+        │ Print Summary   │
+        └───────┬────────┘
+                │
+        ┌───────▼────────┐
+        │   Dockerized    │
+        │   Tool/Image    │
+        └─────────────────┘
+
+
+Everything flows in one direction, and each step is modular.
+
+⭐ 2. Folder + File Structure (Real-World, Clean & Scalable)
+
+Here is the project layout used in professional Python CLI tools:
+
+dataprofiler/
+│
+├── dataprofiler/                  # Main application package
+│   ├── __init__.py
+│   ├── cli.py                     # CLI entrypoint (Typer / argparse)
+│   ├── config.py                  # Config + global settings
+│   │
+│   ├── ingestion/                 # STAGE 1: Data Loading
+│   │   ├── __init__.py
+│   │   ├── loader.py              # load_csv, infer_types, sanitize
+│   │
+│   ├── profiling/                 # STAGE 2: Profiling Engine
+│   │   ├── __init__.py
+│   │   ├── statistics.py          # mean, std, skew, kurtosis
+│   │   ├── missing.py             # missing value analysis
+│   │   ├── duplicates.py          # duplicate row detection
+│   │   ├── categories.py          # categorical profiling + entropy
+│   │   ├── correlations.py        # correlation matrix calc
+│   │   └── summary.py             # composes full profile object
+│   │
+│   ├── anomalies/                 # STAGE 3: Anomaly Detection
+│   │   ├── __init__.py
+│   │   ├── iqr.py                 # IQR method
+│   │   ├── zscore.py              # Z-score method
+│   │   └── isolation_forest.py    # ML model-based detection
+│   │
+│   ├── reports/                   # STAGE 4: Reports
+│   │   ├── __init__.py
+│   │   ├── builder.py             # orchestrates full report creation
+│   │   ├── templates/             # HTML templates (Jinja2 or similar)
+│   │   │   ├── report.html
+│   │   │   └── style.css
+│   │   ├── exporter.py            # export -> HTML, PDF, JSON
+│   │   └── charts.py              # optional: histogram, heatmaps
+│   │
+│   ├── utils/                     # misc helper functions
+│   │   ├── __init__.py
+│   │   ├── logger.py
+│   │   └── timer.py
+│   │
+│   └── model/                     # unified Python object holding results
+│       ├── __init__.py
+│       └── profile_result.py      # dataclasses for results
+│
+│
+├── data/                          # user/sample datasets
+│   └── sample_sales.csv
+│
+├── reports/                       # generated reports saved here
+│   └── (user-generated)
+│
+├── tests/                         # unit tests
+│   ├── test_statistics.py
+│   ├── test_anomalies.py
+│   └── test_cli.py
+│
+├── Dockerfile                     # container build instructions
+├── docker-compose.yml (optional)
+├── requirements.txt
+├── README.md
+└── setup.py / pyproject.toml      # makes it pip-installable
+
+
+This is industry-standard structure.
+
+⭐ 3. Detailed Pipeline Explanation (Step-by-Step Flow)
+
+Below is exactly how data flows through the system.
+
+STEP 1: CLI Entry Point
+
+File: cli.py
+
+Responsible for:
+
+parsing arguments
+
+passing file path & user options to pipeline
+
+controlling output format
+
+CLI example:
+
+dataprofiler profile data.csv --anomaly isolation --report html
+
+STEP 2: INGESTION
+
+Folder: dataprofiler/ingestion/
+
+Modules:
+
+loader.py
+
+What it does:
+
+reads CSV (chunked if big)
+
+handles malformed rows
+
+detects column types
+
+converts datetimes
+
+creates an internal DataFrame
+
+Output:
+
+df (pandas DataFrame)
+
+STEP 3: PROFILING ENGINE
+
+Folder: dataprofiler/profiling/
+
+This is the heart of the system.
+
+Modules:
+
+statistics.py → mean, std, quartiles, skew, kurtosis
+
+missing.py → missing percentages
+
+duplicates.py → find duplicates
+
+categories.py → category frequencies, entropy
+
+correlations.py → Pearson matrix
+
+summary.py → combine everything into one structure
+
+Output:
+
+A ProfileResult object containing:
+
+{
+  'numeric_stats': {...},
+  'categorical_stats': {...},
+  'missing': {...},
+  'duplicates': {...},
+  'correlation_matrix': {...},
+  ...
+}
+
+STEP 4: ANOMALY DETECTION
+
+Folder: dataprofiler/anomalies/
+
+Your tool supports three algorithms:
+
+1. IQR Method
+
+File: iqr.py
+Detects outliers using quartiles.
+
+2. Z-score Method
+
+File: zscore.py
+Detects values > |3σ| from mean.
+
+3. Isolation Forest
+
+File: isolation_forest.py
+ML-based anomaly detection:
+
+builds random trees
+
+anomalies require fewer splits
+
+produces anomaly score (0–1)
+
+Output:
+
+Anomaly summary:
+
+{
+  'iqr': [...],
+  'zscore': [...],
+  'isolation_forest': [...],
+}
+
+STEP 5: REPORT GENERATION
+
+Folder: dataprofiler/reports/
+
+Modules:
+
+builder.py → orchestrates whole report building
+
+templates/report.html → HTML template
+
+templates/style.css → custom styling
+
+exporter.py → handles HTML, JSON, PDF export
+
+charts.py → histograms, correlations, bar charts
+
+You can use:
+
+Jinja2 for HTML template rendering
+
+WeasyPrint or ReportLab for PDF
+
+Plotly/Matplotlib for charts
+
+Output:
+
+A good-looking report file saved in reports/:
+
+reports/
+  profile_2025-01-10.html
+  profile_2025-01-10.pdf
+  profile_2025-01-10.json
+
+STEP 6: CLI Summary Output
+
+After the report is saved,
+CLI prints something clean like:
+
+Profile complete!
+
+Rows: 10,000
+Columns: 18
+Missing Values: 3.2%
+Detected Outliers (IQ): 82
+Detected Outliers (Z-score): 55
+Isolation Forest Anomalies: 47
+
+Report saved to: reports/profile_2025-01-10.html
+
+STEP 7: Dockerization
+
+File: Dockerfile
+
+The Docker image includes:
+
+Python
+
+pandas
+
+scipy/scikit-learn
+
+Jinja2
+
+your CLI
+
+Users can run:
+
+docker run -v $(pwd)/data:/app/data \
+           -v $(pwd)/reports:/app/reports \
+           dataprofiler profile /app/data/sales.csv
+
+
+Volumes allow output to appear outside the container.
+
+⭐ 4. Full System Architecture Diagram (Text Version)
+                   ┌────────────────────────────┐
+                   │            CLI              │
+                   │     (typer/argparse)        │
+                   └───────────────┬─────────────┘
+                                   │
+                 ┌─────────────────▼──────────────────┐
+                 │        Ingestion Layer              │
+                 │    loader.py → DataFrame            │
+                 └─────────────────┬──────────────────┘
+                                   │
+                 ┌─────────────────▼──────────────────┐
+                 │         Profiling Engine            │
+                 │ statistics | missing | cats | corr  │
+                 │ summary.py → ProfileResult          │
+                 └─────────────────┬──────────────────┘
+                                   │
+                 ┌─────────────────▼──────────────────┐
+                 │       Anomaly Detection             │
+                 │ IQR | Z-score | Isolation Forest    │
+                 │ → anomaly summary                   │
+                 └─────────────────┬──────────────────┘
+                                   │
+                 ┌─────────────────▼──────────────────┐
+                 │       Report Generator              │
+                 │ builder.py + templates + charts     │
+                 │ → HTML/PDF/JSON                     │
+                 └─────────────────┬──────────────────┘
+                                   │
+                   ┌───────────────▼──────────────┐
+                   │        Output (CLI + Files)   │
+                   └───────────────┬──────────────┘
+                                   │
+                   ┌───────────────▼──────────────┐
+                   │         Docker Container      │
+                   └──────────────────────────────┘
+
+⭐ 5. The Final Vision (Imagine This Clearly)
+
+This is what you are building:
+
+✔ A CLI tool
+✔ with ML anomaly detection
+✔ with statistical profiling
+✔ with clean architecture
+✔ producing beautiful HTML/PDF reports
+✔ running inside Docker
+✔ easily shareable on GitHub + LinkedIn
+✔ easy for recruiters to understand
+✔ impressive technically
+
+This is a portfolio-grade, resume-worthy project.

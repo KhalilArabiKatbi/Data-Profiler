@@ -1,8 +1,6 @@
 from typing import Dict
-import numpy as np
 import pandas as pd
-
-from .helpers import series_mode
+from dataprofiler.utils import series_mode, histogram_for_series, iqr_bounds, zscore_bounds
 
 
 def compute_numeric(df: pd.DataFrame) -> Dict[str, Dict]:
@@ -21,6 +19,8 @@ def compute_numeric(df: pd.DataFrame) -> Dict[str, Dict]:
                 "kurtosis": None,
                 "quantiles": {"q25": None, "q50": None, "q75": None},
                 "missing_pct": float(df[col].isna().mean() * 100.0),
+                "histogram": {"edges": [], "counts": []},
+                "outlier_ranges": {"iqr": {"lower": None, "upper": None}, "zscore": {"lower": None, "upper": None}},
             }
             continue
         mean = float(s.mean())
@@ -33,6 +33,9 @@ def compute_numeric(df: pd.DataFrame) -> Dict[str, Dict]:
         q25 = float(s.quantile(0.25))
         q50 = float(s.quantile(0.5))
         q75 = float(s.quantile(0.75))
+        edges, counts = histogram_for_series(df[col])
+        lb_iqr, ub_iqr = iqr_bounds(df[col])
+        lb_z, ub_z = zscore_bounds(df[col])
         out[col] = {
             "mean": mean,
             "median": median,
@@ -43,5 +46,10 @@ def compute_numeric(df: pd.DataFrame) -> Dict[str, Dict]:
             "kurtosis": kurt,
             "quantiles": {"q25": q25, "q50": q50, "q75": q75},
             "missing_pct": float(df[col].isna().mean() * 100.0),
+            "histogram": {"edges": edges, "counts": counts},
+            "outlier_ranges": {
+                "iqr": {"lower": float(lb_iqr), "upper": float(ub_iqr)},
+                "zscore": {"lower": float(lb_z), "upper": float(ub_z)},
+            },
         }
     return out

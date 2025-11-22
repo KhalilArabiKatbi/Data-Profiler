@@ -1,0 +1,21 @@
+body{font-family:Segoe UI,Arial,sans-serif;margin:0;padding:0;background:#f7f9fc;color:#222}
+header{background:#0d6efd;color:#fff;padding:16px}
+h1{margin:0;font-size:20px}
+main{padding:16px}
+table{border-collapse:collapse;width:100%;margin-bottom:16px}
+th,td{border:1px solid #ddd;padding:8px;text-align:left}
+th{background:#f0f3f8}
+.section-title{font-weight:600;margin:16px 0 8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.card{border:1px solid #e5e9f2;background:#fff;border-radius:6px;padding:12px}
+.histogram{margin:8px 0}
+.hist-title{font-weight:600;margin-bottom:6px}
+.bar{display:flex;align-items:center;gap:8px;margin:2px 0}
+.bar-label{width:140px;font-size:12px;color:#555}
+.bar-fill{height:12px;background:#0d6efd;border-radius:2px}
+.bar-count{font-size:12px;color:#555}
+.heatmap{border:1px solid #e5e9f2}
+.kpi{display:flex;gap:12px;margin:12px 0}
+.kpi .item{background:#fff;border:1px solid #e5e9f2;border-radius:6px;padding:10px;flex:1}
+.kpi .value{font-size:18px;font-weight:600}
+.subhdr{font-weight:600;margin:8px 0}

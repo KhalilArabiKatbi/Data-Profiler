@@ -45,3 +45,7 @@ __pypackages__/
 Thumbs.db
 Desktop.ini
 .ipynb_checkpoints/
+
+# Generated reports
+reports/*
+!reports/.gitkeep
